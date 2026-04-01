@@ -41,3 +41,5 @@ NestJS: http://localhost:3002
 Bull Board: http://localhost:3001
 
 PG_ADMIN:http://localhost:5050 Login/pass = admin@admin.com/pgadmin4
+
+http://localhost:9090/targets таргети для моніторингу

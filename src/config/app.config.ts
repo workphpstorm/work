@@ -6,4 +6,6 @@ export default () => ({
   debug: process.env.APP_DEBUG === 'true',
   timezone: process.env.APP_TIMEZONE || 'UTC',
   locale: process.env.APP_LOCALE || 'en',
+  redisPort: parseInt(process.env.REDIS_PORT ?? '6379', 10),
+  redisUrl: process.env.REDIS_URL || 'localhost',
 });

@@ -1,6 +1,38 @@
 version: '3.5'
 
 services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_PORT=${DB_PORT}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DATABASE}
+    container_name: postgres
+    volumes:
+      - ./docker/data/pgdata:/var/lib/postgresql
+    ports:
+      - '${DB_PORT}:5432'
+    networks:
+      - backend-net
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "8080:80"
+    volumes:
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json
+    depends_on:
+      - postgres
+    networks:
+      - backend-net
   app:
     build:
       context: .
@@ -12,12 +44,18 @@ services:
       - PORT=${PORT}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DATABASE=${DATABASE}
     ports:
       - '${PORT}:${PORT}'
     depends_on:
+      - postgres
       - redis
     volumes:
-      - ./:/app
+      - ./src:/app/src
     networks:
       - backend-net
 
@@ -26,19 +64,6 @@ services:
     container_name: redis
     ports:
       - "${REDIS_PORT}:6379"
-    networks:
-      - backend-net
-
-  bull-board:
-    image: deadly0/bull-board
-    container_name: bull-board
-    depends_on:
-      - redis
-    ports:
-      - "${BULL_BOARD_PORT}:3000"
-    environment:
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
     networks:
       - backend-net
 
@@ -79,10 +104,15 @@ services:
       - REDIS_ADDR=redis://redis:6379
     networks:
       - backend-net
-
+  k6:
+    image: grafana/k6:latest
+    volumes:
+      - ./k6/test.js:/test.js
+    command: run /test.js
+    depends_on:
+      - app
+    networks:
+      - backend-net
 networks:
   backend-net:
     driver: bridge
-volumes:
-  grafana-data:
-  prometheus-data:
